@@ -7,7 +7,7 @@
 ### Last Modified: Nov 2014 WB, WR, LR
 ###
 
-SDK_INSTALL_PATH :=  /cm/shared/apps/cuda11.2/toolkit/11.2.2
+SDK_INSTALL_PATH :=  /usr/local/cuda
 NVCC=$(SDK_INSTALL_PATH)/bin/nvcc
 LIB       :=  -L$(SDK_INSTALL_PATH)/lib64 -L$(SDK_INSTALL_PATH)/samples/common/lib/linux/x86_64
 #INCLUDES  :=  -I$(SDK_INSTALL_PATH)/include -I$(SDK_INSTALL_PATH)/samples/common/inc
@@ -15,7 +15,7 @@ OPTIONS   :=  -O3
 #--maxrregcount=100 --ptxas-options -v 
 
 TAR_FILE_NAME  := YourNameCUDA1.tar
-EXECS :=  vecadd00 matmult00
+EXECS :=  vecadd00 matmult00 vecadd01
 all:$(EXECS)
 
 #######################################################################
@@ -31,6 +31,8 @@ timer.o : timer.cu timer.h
 	${NVCC} $< -c -o $@ $(OPTIONS)
 
 #######################################################################
+# Simple vector addition##
+#######################################################################
 vecaddKernel00.o : vecaddKernel00.cu
 	${NVCC} $< -c -o $@ $(OPTIONS)
 
@@ -38,12 +40,16 @@ vecadd00 : vecadd.cu vecaddKernel.h vecaddKernel00.o timer.o
 	${NVCC} $< vecaddKernel00.o -o $@ $(LIB) timer.o $(OPTIONS)
 
 
+
+
 #######################################################################
-### vecaddKernel01.o : vecaddKernel01.cu
-###	${NVCC} $< -c -o $@ $(OPTIONS)
-###
-### vecadd01 : vecadd.cu vecaddKernel.h vecaddKernel01.o timer.o
-###	${NVCC} $< vecaddKernel01.o -o $@ $(LIB) timer.o $(OPTIONS)
+##COLLASED MEMORY ACCESS Vector addition
+#######################################################################
+vecaddKernel01.o : vecaddKernel01.cu
+	${NVCC} $< -c -o $@ $(OPTIONS)
+
+vecadd01 : vecadd.cu vecaddKernel.h vecaddKernel01.o timer.o
+	${NVCC} $< vecaddKernel01.o -o $@ $(LIB) timer.o $(OPTIONS)
 
 
 #######################################################################
