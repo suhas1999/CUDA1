@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Default values
+trace="--trace=cuda"
+sample="--sample=none"
+ctxsw="--cpuctxsw=none"
+output="nsys_easy"
+
+# Usage function
+usage() {
+    echo "Usage: $0 [-t trace] [-s sample] [-c ctxsw] [-o output] command"
+    echo "  -t trace   : Set the trace option (default: --trace=cuda)"
+    echo "  -s sample  : Set the sample option (default: --sample=none)"
+    echo "  -c ctxsw   : Set the context switch option (default: --cpuctxsw=none)"
+    echo "  -o output  : Set the output file name (default: nsys_easy)"
+    exit 1
+}
+
+# Parse command line options
+while getopts "t:s:c:o:" opt; do
+    case $opt in
+        t) trace="--trace=$OPTARG" ;;
+        s) sample="--sample=$OPTARG" ;;
+        c) ctxsw="--cpuctxsw=$OPTARG" ;;
+        o) output="$OPTARG" ;;
+        \?) usage ;;
+    esac
+done
+
+shift $((OPTIND -1))
+
+# 1. Run the profiler fully separated from grep. 
+# We pipe stderr to /dev/null to hide Nsight's warnings, but leave stdout so your C++ program's `std::cout` prints perfectly!
+nsys profile $trace $sample $ctxsw --force-overwrite=true -o $output "$@" 2>/dev/null
+
+echo -e "\n=== CUDA KERNEL & UNIFIED MEMORY SUMMARY ===\n"
+
+# 2. Run the statistics quietly against the generated profiling file to get the exact 3 rows
+nsys stats $output.qdrep 2>/dev/null | grep -E "vecAdd|\[CUDA Unified Memory memcpy HtoD\]|\[CUDA Unified Memory memcpy DtoH\]" | head -n 3
+
+echo -e "\nDone!"
