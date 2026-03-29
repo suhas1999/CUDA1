@@ -117,8 +117,10 @@ int main(int argc, char **argv) {
   // Print profiling results
   std::cout << "Explicit Memory - K = " << K << "M | Scenario = " << scenario;
   std::cout << " | Configuration: <<<" << blocks << ", " << threads << ">>>\n";
-  std::cout << "STRICT Kernel Execution Time: " << kernel_ms / 1000.0 << " seconds (" << kernel_ms << " ms)\n";
-  std::cout << "TOTAL Round-Trip Time (Memcpy + Kernel + Memcpy): " << total_duration.count() << " seconds\n";
+  std::cout << "STRICT Kernel Execution Time: " << kernel_ms / 1000.0
+            << " seconds (" << kernel_ms << " ms)\n";
+  std::cout << "TOTAL Round-Trip Time (Memcpy + Kernel + Memcpy): "
+            << total_duration.count() << " seconds\n";
 
   // 6. Free the memory on the device and host
   cudaEventDestroy(start_kernel);
