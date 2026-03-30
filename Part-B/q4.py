@@ -42,15 +42,15 @@ def collect_data():
     # 2. Run CPU only (q1)
     for k in K_VALUES:
         out = run_command(["./q1", str(k)])
-        t = extract_time(out, r"Execution time for K=\d+ million:\s+([0-9.]+)\s+seconds")
+        t = extract_time(out, r"Execution time for K=\d+ million:\s+([0-9.eE+-]+)\s+seconds")
         cpu_times.append(t if t else 0.0)
     
     # 3. Run Explicit Memory (q2)
     for scenario in SCENARIOS:
         for k in K_VALUES:
             out = run_command(["./q2", str(k), str(scenario)])
-            kernel_t = extract_time(out, r"STRICT Kernel Execution Time:\s+([0-9.]+)\s+seconds")
-            total_t = extract_time(out, r"TOTAL Round-Trip Time \(Memcpy \+ Kernel \+ Memcpy\):\s+([0-9.]+)\s+seconds")
+            kernel_t = extract_time(out, r"STRICT Kernel Execution Time:\s+([0-9.eE+-]+)\s+seconds")
+            total_t = extract_time(out, r"TOTAL Round-Trip Time \(Memcpy \+ Kernel \+ Memcpy\):\s+([0-9.eE+-]+)\s+seconds")
             q2_kernel_times[scenario].append(kernel_t if kernel_t else 0.0)
             q2_total_times[scenario].append(total_t if total_t else 0.0)
 
@@ -58,8 +58,8 @@ def collect_data():
     for scenario in SCENARIOS:
         for k in K_VALUES:
             out = run_command(["./q3", str(k), str(scenario)])
-            kernel_t = extract_time(out, r"Kernel execution \(INCLUDES Host-to-Device Page Fault overhead\):\s+([0-9.]+)\s+seconds")
-            total_t = extract_time(out, r"TOTAL Round-Trip Time \(H2D Faults \+ Kernel \+ D2H Faults\):\s+([0-9.]+)\s+seconds")
+            kernel_t = extract_time(out, r"Kernel execution \(INCLUDES Host-to-Device Page Fault overhead\):\s+([0-9.eE+-]+)\s+seconds")
+            total_t = extract_time(out, r"TOTAL Round-Trip Time \(H2D Faults \+ Kernel \+ D2H Faults\):\s+([0-9.eE+-]+)\s+seconds")
             q3_kernel_times[scenario].append(kernel_t if kernel_t else 0.0)
             q3_total_times[scenario].append(total_t if total_t else 0.0)
 
