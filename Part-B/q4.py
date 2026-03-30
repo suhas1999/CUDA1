@@ -63,37 +63,20 @@ def collect_data():
             q3_kernel_times[scenario].append(kernel_t if kernel_t else 0.0)
             q3_total_times[scenario].append(total_t if total_t else 0.0)
 
-def plot_chart(title, kernel_data, total_data, cpu_data, filename):
-    """Generates a chart with 2 subplots (Total Execution, Kernel Execution)."""
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+def plot_chart(title, kernel_data, cpu_data, filename):
+    """Generates a chart showing only Kernel Execution Time."""
+    fig, ax_kernel = plt.subplots(1, 1, figsize=(8, 6))
     fig.suptitle(title, fontsize=16)
 
     # Styling colors/markers for the 3 scenarios
     colors = {1: 'r-*', 2: 'g-s', 3: 'b-^'}
 
-    # Subplot 1: Total Execution Time
-    ax_total = axes[0]
-    ax_total.set_title("Total Round-Trip Execution Time")
-    ax_total.set_xscale('log')
-    ax_total.set_yscale('log')
-    ax_total.set_xlabel("K (millions)")
-    ax_total.set_ylabel("Execution Time (seconds) [Log Scale]")
-    
-    # Plot CPU baseline
-    ax_total.plot(K_VALUES, cpu_data, 'k--o', label="CPU Only (q1)", linewidth=2)
-    # Plot GPU traces
-    for scenario in SCENARIOS:
-        ax_total.plot(K_VALUES, total_data[scenario], colors[scenario], label=f"Scenario {scenario}")
-        
-    ax_total.legend()
-    ax_total.grid(True, which="both", ls="--", alpha=0.5)
-
-    # Subplot 2: Kernel Execution Time
-    ax_kernel = axes[1]
+    # Kernel Execution Time
     ax_kernel.set_title("Strict Kernel Execution Time")
     ax_kernel.set_xscale('log')
     ax_kernel.set_yscale('log')
     ax_kernel.set_xlabel("K (millions)")
+    ax_kernel.set_ylabel("Execution Time (seconds) [Log Scale]")
     
     # Plot CPU baseline
     ax_kernel.plot(K_VALUES, cpu_data, 'k--o', label="CPU Only (q1)", linewidth=2)
@@ -122,7 +105,6 @@ if __name__ == "__main__":
     plot_chart(
         title="Step 2: Explicit Memory Transfers (cudaMemcpy)", 
         kernel_data=q2_kernel_times, 
-        total_data=q2_total_times, 
         cpu_data=cpu_times, 
         filename="q4_without_unified.jpg"
     )
@@ -131,8 +113,6 @@ if __name__ == "__main__":
     plot_chart(
         title="Step 3: Unified Memory (Implicit Page Faults)", 
         kernel_data=q3_kernel_times, 
-        total_data=q3_total_times, 
         cpu_data=cpu_times, 
         filename="q4_with_unified.jpg"
     )
-    print("Done! Check your folder for the two generated JPG charts.")
