@@ -38,40 +38,42 @@ __global__ void conv_kernel(const double *__restrict__ I0,
   __shared__ double kernel[C][FH][FW];
   __shared__ double input[C][BLOCK_Y + FH - 1][BLOCK_X + FW - 1];
 
-  int tx = threadIdx.x; // maps to x (Column)
-  int ty = threadIdx.y; // maps to y (Row)
+  int tx = threadIdx.x;
+  int ty = threadIdx.y;
 
-  int block_start_x = blockIdx.x * BLOCK_X; // global col start
-  int block_start_y = blockIdx.y * BLOCK_Y; // global row start
-  int k = blockIdx.z;                       // filter index
+  int block_start_x = blockIdx.x * BLOCK_X;
+  int block_start_y = blockIdx.y * BLOCK_Y;
+  int k = blockIdx.z; // filter index
 
   int tid = ty * BLOCK_X + tx;
   int threads_per_block = BLOCK_X * BLOCK_Y;
 
-  // linear load
-  int total_kernel_elements = C * FH * FW;
-  for (int i = tid; i < total_kernel_elements; i += threads_per_block) {
-    int c = i / (FH * FW);
-    int rem = i % (FH * FW);
+  // 1. Load Filter into Shared Memory
+  if (tid < C * FH * FW) {
+    int c = tid / (FH * FW);
+    int rem = tid % (FH * FW);
     int row = rem / FW;
     int col = rem % FW;
     kernel[c][row][col] = F[F_IDX(k, c, col, row)];
   }
 
-  // linear load
-  int total_input_elements = C * (BLOCK_Y + FH - 1) * (BLOCK_X + FW - 1);
+  // 2. Load Input Tile into Shared Memory
+  // Pre-calculate tile dimensions for clarity
+  const int TW = BLOCK_X + FW - 1;
+  const int TH = BLOCK_Y + FH - 1;
+  const int total_input_elements = C * TH * TW;
+
   for (int i = tid; i < total_input_elements; i += threads_per_block) {
-    int c = i / ((BLOCK_Y + FH - 1) * (BLOCK_X + FW - 1));
-    int rem = i % ((BLOCK_Y + FH - 1) * (BLOCK_X + FW - 1));
-    int row_offset = rem / (BLOCK_X + FW - 1);
-    int col_offset = rem % (BLOCK_X + FW - 1);
+    int c = i / (TH * TW);
+    int rem = i % (TH * TW);
+    int row_offset = rem / TW;
+    int col_offset = rem % TW;
 
-    int global_x = block_start_x + col_offset;
-    int global_y = block_start_y + row_offset;
+    int gx = block_start_x + col_offset;
+    int gy = block_start_y + row_offset;
 
-    // Boundary check for input (padded image is (W+2P) x (H+2P))
-    if (global_x < (W + 2 * P) && global_y < (H + 2 * P)) {
-      input[c][row_offset][col_offset] = I0[I0_IDX(c, global_x, global_y)];
+    if (gx < (W + 2 * P) && gy < (H + 2 * P)) {
+      input[c][row_offset][col_offset] = I0[I0_IDX(c, gx, gy)];
     } else {
       input[c][row_offset][col_offset] = 0.0;
     }
@@ -79,7 +81,7 @@ __global__ void conv_kernel(const double *__restrict__ I0,
 
   __syncthreads();
 
-  // 3. Compute the Output
+  // 3. Compute Output
   int x = block_start_x + tx;
   int y = block_start_y + ty;
 
@@ -88,7 +90,6 @@ __global__ void conv_kernel(const double *__restrict__ I0,
     for (int c = 0; c < C; c++) {
       for (int i = 0; i < FH; i++) {
         for (int j = 0; j < FW; j++) {
-          // Kernel flip: FH-1-i, FW-1-j
           sum += input[c][ty + i][tx + j] * kernel[c][FH - 1 - i][FW - 1 - j];
         }
       }
